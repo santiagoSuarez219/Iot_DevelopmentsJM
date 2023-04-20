@@ -1,15 +1,17 @@
 const {InfluxDB, flux} = require('@influxdata/influxdb-client')
+const mqtt = require('mqtt');
 
 class TemperatureService {
 
-    constructor(url, token, org) {
+    constructor(url, token, org, brockerUrl) {
       this.client = new InfluxDB({ url, token });
       this.queryApi = this.client.getQueryApi(org);
+      this.client = mqtt.connect(brockerUrl)
     }
 
     getData(callback) {
       const query = flux`from(bucket:"iotsmart")\
-      |> range(start: -72h)\
+      |> range(start: -3h)\
       |> filter(fn:(r) => r._measurement == "my_measurement")\
       |> filter(fn:(r) => r.location == "chamber_1")\
       |> filter(fn:(r) => r._field == "temperature")\
@@ -35,6 +37,12 @@ class TemperatureService {
             callback(resultados)
         },
     });
+  }
+
+  modificarSetPoint(setpoint, callback) {
+    console.log(setpoint);
+    this.client.publish('setpoint', setpoint.toString());
+    callback();
   }
 }
 
